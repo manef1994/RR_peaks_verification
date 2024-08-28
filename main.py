@@ -1,6 +1,6 @@
 import bisect
 import numpy as np
-from ecgdetectors import Detectors
+# from ecgdetectors import Detectors
 import mne
 import matplotlib
 from pathlib import Path
@@ -18,23 +18,19 @@ def butter_lowpass(cutoff, fs, order=2):
     normal_cutoff = cutoff / nyq
     b, a = butter(order, normal_cutoff, btype='low', analog=False)
     return b, a
-
 def butter_highpass(cutoff, sample_rate, order=2):
     nyq = 0.5 * sample_rate
     normal_cutoff = cutoff / nyq
     b, a = butter(order, normal_cutoff, btype='high', analog=False)
     return b, a
-
 def remove_baseline_wander(data, sample_rate, cutoff=0.05):
     return filter_signal(data=data, cutoff=cutoff, sample_rate=sample_rate, filtertype='notch')
-
 def butter_bandpass(lowcut, highcut, sample_rate, order=2):
     nyq = 0.5 * sample_rate
     low = lowcut / nyq
     high = highcut / nyq
     b, a = butter(order, [low, high], btype='band')
     return b, a
-
 def filter_signal(data, cutoff, sample_rate, order=2, filtertype='lowpass', return_top=False):
     if filtertype.lower() == 'lowpass':
         b, a = butter_lowpass(cutoff, sample_rate, order=order)
@@ -58,268 +54,84 @@ def filter_signal(data, cutoff, sample_rate, order=2, filtertype='lowpass', retu
         return filtered_data
 
 
-# path = "E:\\data\\Fabrice\\Patients\\PN09\\"
-# ID = "signal-PN02-220310E-CEX_0008"
-# # path = "C:\\Users\\Ftay\\Desktop\\PhD\\tests\\siena_vs_fantasia\\Peaks_RR\\Interictal\\PN05\\"
-# # ID = "PN05-2-10_40"
-# fs = 256
-# # # == load the epileptic patient
-# with open(path + ID + ".txt", 'r') as file1:
-#     signal_input = [float(i) for line in file1 for i in line.split('\n') if i.strip()]
+# =====================================================
+"Reading the EDF file"
+# =====================================================
 
-# == reading the EDf file and extracting the ECG signal
-# file_path = "C:\\Users\\Ftay\\Desktop\PhD\\tests\\data\\siena-scalp-eeg-database-1.0.0\\PN06\\PN06-4.edf"
-path = "E:\\data\\Fabrice\\Patients\\PN02\\"
-ID = "220310E-CEX_0008"
+path = "C:\\Users\\Manef\\Desktop\\data\\siena-scalp-eeg-database-1.0.0\\siena-scalp-eeg-database-1.0.0\\PN06\\"
+ID = "PN06-2"
+fs = 512
 file_path = path + ID + ".edf"
 edf = read_raw_edf(file_path, preload=False, stim_channel=None, verbose=False)
 xx = edf.ch_names
-index = xx.index("ECG")
+index = xx.index("EEG T5")
 fs = edf.info['sfreq']
 fs = int(fs)
 signal_input = edf[index]
 signal = signal_input[0]
-
 signal_input = signal[0]
-print("asba")
 
-# 16:13.23
-# end = (fs * 60 * 60 * 1) + (fs * 60 * 48) + (59 * fs)
-# seizure = (fs * 60 * 60 * 0) + (fs * 60 * 53) + (07 * fs)
-# pre_ictal = (fs * 60 * 60 * 0) + (fs * 60 * 38) + (59 * fs)
-#
-# print('pre-ictal:\t', pre_ictal)
-# print('seizure:\t', seizure)
-# print('end:\t', end)
+# =====================================================
+"extracting the needed part of the signal to work with"
+# =====================================================
 
-# signal_input = signal_input[pre_ictal:end]
-# signal_input = signal_input[pre_ictal:len(signal_input)]
+end = (fs * 60 * 60 * 2) + (fs * 60 * 40) + (20 * fs)
+pre_ictal = (fs * 60 * 60 * 1) + (fs * 60 * 6) + (20 * fs)
+signal_input = signal_input[pre_ictal:end]
 
-# signal_input_1 = signal_input[104200:len(signal_input)]
-# signal_input = signal_input_1
-# #
-# # == delet unwanted parts of the signals
-# signal_input_1 = signal_input[0:364250]
-# signal_input1 = signal_input[366300:len(signal_input)]
-# signal_input_1 = np.append(signal_input_1, signal_input1)
-# signal_input = signal_input_1
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# signal_input_1 = signal_input[0:374200]
-# signal_input1 = signal_input[380800:len(signal_input)]
-# signal_input_1 = np.append(signal_input_1, signal_input1)
-# signal_input = signal_input_1
-# # # # # # # # # # # # # # # # # # # # # # # # # #
-# signal_input_1 = signal_input[0:663500]
-# signal_input1 = signal_input[667200:len(signal_input)]
-# signal_input_1 = np.append(signal_input_1, signal_input1)
-# signal_input = signal_input_1
-# # # # # # # # # # # # # # # # # # # # # # # # #
-# signal_input_1 = signal_input[0:857000]
-# signal_input1 = signal_input[860400:len(signal_input)]
-# signal_input_1 = np.append(signal_input_1, signal_input1)
-# signal_input = signal_input_1
-# # # # # # # # # # # # # # # # # # # # #
-# signal_input_1 = signal_input[0:907400]
-# signal_input1 = signal_input[910650:len(signal_input)]
-# signal_input_1 = np.append(signal_input_1, signal_input1)
-# signal_input = signal_input_1
-# # # # # # # # # # # # # #
-# signal_input_1 = signal_input[0:941500]
-# signal_input1 = signal_input[947500:len(signal_input)]
-# signal_input_1 = np.append(signal_input_1, signal_input1)
-# signal_input = signal_input_1
-# # # # # # # # # # #
-# signal_input_1 = signal_input[0:1258100]
-# signal_input1 = signal_input[1259400:len(signal_input)]
-# signal_input_1 = np.append(signal_input_1, signal_input1)
-# signal_input = signal_input_1
-# # # # # # #
-# signal_input_1 = signal_input[0:1482200]
-# signal_input1 = signal_input[1485000:len(signal_input)]
-# signal_input_1 = np.append(signal_input_1, signal_input1)
-# signal_input = signal_input_1
-# # # # # #
-# signal_input_1 = signal_input[0:647100]
-# signal_input1 = signal_input[65200:len(signal_input)]
-# signal_input_1 = np.append(signal_input_1, signal_input1)
-# signal_input = signal_input_1
-# # # # #
-# signal_input_1 = signal_input[0:1229000]
-# signal_input1 = signal_input[1234000:len(signal_input)]
-# signal_input_1 = np.append(signal_input_1, signal_input1)
-# signal_input = signal_input_1
-# # # #
-# signal_input_1 = signal_input[0:494500]
-# signal_input1 = signal_input[502200:len(signal_input)]
-# signal_input_1 = np.append(signal_input_1, signal_input1)
-# signal_input = signal_input_1
-# # # #
-# signal_input_1 = signal_input[0:533500]
-# signal_input1 = signal_input[536400:len(signal_input)]
-# signal_input_1 = np.append(signal_input_1, signal_input1)
-# signal_input = signal_input_1
-# # # #
-# signal_input_1 = signal_input[0:543900]
-# signal_input1 = signal_input[545700:len(signal_input)]
-# signal_input_1 = np.append(signal_input_1, signal_input1)
-# signal_input = signal_input_1
-# # # #
-# signal_input_1 = signal_input[0:562200]
-# signal_input1 = signal_input[578700:len(signal_input)]
-# signal_input_1 = np.append(signal_input_1, signal_input1)
-# signal_input = signal_input_1
-# # # #
-# signal_input_1 = signal_input[0:587750]
-# signal_input1 = signal_input[592500:len(signal_input)]
-# signal_input_1 = np.append(signal_input_1, signal_input1)
-# signal_input = signal_input_1
-# # # #
-# signal_input_1 = signal_input[0:613950]
-# signal_input1 = signal_input[620800:len(signal_input)]
-# signal_input_1 = np.append(signal_input_1, signal_input1)
-# signal_input = signal_input_1
-# # # #
-# signal_input_1 = signal_input[0:622800]
-# signal_input1 = signal_input[633150:len(signal_input)]
-# signal_input_1 = np.append(signal_input_1, signal_input1)
-# signal_input = signal_input_1
-# # # #
-# signal_input_1 = signal_input[0:625350]
-# signal_input1 = signal_input[648600:len(signal_input)]
-# signal_input_1 = np.append(signal_input_1, signal_input1)
-# signal_input = signal_input_1
-# # # #
-# signal_input_1 = signal_input[0:628500]
-# signal_input1 = signal_input[631400:len(signal_input)]
-# signal_input_1 = np.append(signal_input_1, signal_input1)
-# signal_input = signal_input_1
-# # # #
-# signal_input_1 = signal_input[0:636775]
-# signal_input1 = signal_input[637750:len(signal_input)]
-# signal_input_1 = np.append(signal_input_1, signal_input1)
-# signal_input = signal_input_1
-# # # #
-# signal_input_1 = signal_input[0:638700]
-# signal_input1 = signal_input[640600:len(signal_input)]
-# signal_input_1 = np.append(signal_input_1, signal_input1)
-# signal_input = signal_input_1
-# # # #
-# signal_input_1 = signal_input[0:639990]
-# signal_input1 = signal_input[648950:len(signal_input)]
-# signal_input_1 = np.append(signal_input_1, signal_input1)
-# signal_input = signal_input_1
-# # # #
-# signal_input_1 = signal_input[0:667100]
-# signal_input1 = signal_input[673900:len(signal_input)]
-# signal_input_1 = np.append(signal_input_1, signal_input1)
-# signal_input = signal_input_1
-# # # #
-# signal_input_1 = signal_input[0:662200]
-# signal_input1 = signal_input[667200:len(signal_input)]
-# signal_input_1 = np.append(signal_input_1, signal_input1)
-# signal_input = signal_input_1
-# # # #
-# signal_input_1 = signal_input[0:681200]
-# signal_input1 = signal_input[682400:len(signal_input)]
-# signal_input_1 = np.append(signal_input_1, signal_input1)
-# signal_input = signal_input_1
+# ======================================================
+"In this part we delete the unwanted part of the input ECG signal where we delete this segment from [fromm[i]- to[i]] "
+# =====================================================
+
+fromm = [59000, 72000]
+to = [59900, 72900]
+for i in range (len(fromm)):
+
+    signal_input_1 = signal_input[0:fromm[i]]
+    signal_input1 = signal_input[to[i]:len(signal_input)]
+    signal_input_1 = np.append(signal_input_1, signal_input1)
+    signal_input = signal_input_1
+
+# =====================================================
+"signal filtering"
+# =====================================================
 
 signal_output = filter_signal(data=signal_input, cutoff=60, sample_rate=fs, order=2, filtertype="notch")
 signal_output = filter_signal(data=signal_output, cutoff=20, sample_rate=fs, order=2, filtertype="highpass")
 signal_output = filter_signal(data=signal_output, cutoff=10, sample_rate=fs, order=2, filtertype="lowpass")
-spectral_welch = []
-Samp_entropy, fuzzy_entropy, shannon_entropy, approximate_entropy, approximate_entropy2, multi_multiscale, approximate_entropy3, approximate_entropy4, approximate_entropy5, spectral = (
-[] for i in range(10))
 
-six_seconds = fs * 6
-one_minut = fs * 60
-###########################################################
-# == compute the HRV
-five_min = []
-HRV = []
-RRi = []
-final_peaks = []
+# =====================================================
+"R peaks detection step"
+# =====================================================
 
-print('fs equals to: ', fs)
-
-RRi = []
-spectrale_welch = []
-condition = True
-
-first = 10
-tt = [first]
-
-start = 0
-end = fs * 120
-
-print('signal duration\t\t', ((len(signal_input) / fs) / 60))
+print('signal duration\t\t', ((len(signal_output) / fs) / 60))
+print('signal duration\t\t', len(signal_input))
 print('start to compute the entropy features:')
 HRV = []
 
-r_peaks = nk.ecg_peaks(signal_input, sampling_rate=fs,method="rodrigues2021")
+r_peaks = nk.ecg_peaks(signal_output, sampling_rate=fs,method="rodrigues2021")
+
+# =====================================================
+"plot the detected beats on the original signal to verify that all the beat were correctly detected"
+# =====================================================
 
 xx = r_peaks[1]
 rpeaks = xx["ECG_R_Peaks"]
-
 WW = signal_input
 signal_input = [x+4.7 for x in WW]
-
-pl = [4.6992] * len(rpeaks)
+pl = [4.700] * len(rpeaks)
 
 fig, axs = plt.subplots()
 axs.plot(signal_input, label="the input signal")
-# axs.plot(rpeaks, signal_input[rpeaks], 'ro')
-# axs.axvline((fs * 60 * 40) + (49 * fs), color='r', linestyle='--')
-axs.axvline( len(signal_input) - 38400, color='red', linestyle='--')
 axs.plot(rpeaks, pl, 'ro')
 axs.set_ylabel('Amplitude')
 
 axs.legend()
 plt.show()
 
-# ####################################################################
-
-# == computing the RRi to plot it
-# detectors = Detectors(fs)
-# peaks = detectors.two_average_detector(signal_output)
-
-# path = "C:\\Users\\Ftay\\Desktop\\PhD\\tests\\siena_vs_fantasia\\unhealthy\\"
-# ID = "PN00-4"
-# fs = 512
-# # # == load the epileptic patient
-# with open(path + "peaks-" + ID + ".txt", 'r') as file1:
-#     peaks = [float(i) for line in file1 for i in line.split('\n') if i.strip()]
-
-
-# print("first peak\t", peaks[0])
-# print("final peak\t", peaks[-1])
-#peaks = peaks - 11
-# peaks = [x - 38 for x in peaks]
-
-# r_peaks = nk.ecg_peaks(signal_input, sampling_rate=fs,method="rodrigues2021")
-#
-# xx = r_peaks[1]
-# peaks = xx["ECG_R_Peaks"]
-#
-# pl = [0] * len(peaks)
-#
-# print("lenght of peaks:\t", len(peaks))
-# # == fixing the late detection of Peak RR
-# #peaks = [x - 8 for x in peaks]
-#
-# # == plot the orifinal signal with the beat detected
-# fig, axs = plt.subplots()
-# axs.plot(signal_input, label="the input signal")
-# # axs.plot(peaks, signal_input[peaks], 'ro')
-# axs.plot(peaks, pl, 'ro')
-# axs.set_ylabel('Amplitude')
-# axs.axvline((fs * 60 * 53) + (7 * fs), color='red', linestyle='--')
-# #axs.axvline(x = seizure, color='red', linestyle='--')
-# # axs.grid(True)
-# axs.legend()
-# plt.show()
-# print('seizure index')
-# print ('stop')
+# =====================================================
+"in this part we change the misdetected peak by the correct position"
+# =====================================================
 
 # == extracting the wrong/early detected beat before and after the seizure
 # to_change = [1538 ]
@@ -329,16 +141,18 @@ plt.show()
 #     print("i equals to\t",i)
 #     print(to_change[i])
 #     search = to_change[i]
-#     sei = [i for i, e in enumerate(peaks) if e == search]
+#     sei = [i for i, e in enumerate(rpeaks) if e == search]
 #     print(sei)
 #     sei = int(sei[0])
-#     peaks[sei] = change_to[i]
+#     rpeaks[sei] = change_to[i]
 # # # # #
-# # #
-# to_del = [198112, 386784, 387008, 415703, 602818, 644816]
-#
+
+# =====================================================
+"In this part, if the there's a false detected beats, we delete them"
+# =====================================================
+
+# to_del = [161489, 409505, 541515, 54258, 5732047, 652432, 725635, 735843]
 # peak = rpeaks.tolist()
-# rpeaks = peak
 # print("length of r_peaks\t", len(peak))
 # print("type of r_peaks\t", type(peak))
 # for i in range (len(to_del)):
@@ -347,26 +161,25 @@ plt.show()
 #     sei = [i for i, e in enumerate(peak) if e == search]
 #     sei = int(sei[0])
 #     del peak[sei]
-# # #
-# # #
-# add = [1706309, 1711376]
-# for i in range(len(add)):
-#     peaks.append(add[i])
-# peaks.sort()
-# ####################################################################
-# # == saving all the results
-# path = "C:\\Users\\Ftay\\Desktop\\PhD\\tests\\Peaks_RR\\fabrice\\"
-# # path = "C:\\Users\\Ftay\\Desktop\\PhD\\tests\\siena_vs_fantasia\\Peaks_RR\\PN013"
-# Path(path).mkdir(parents=True, exist_ok=True)
-#
-# np.savetxt(path + '\\peaks-.txt', np.array(peaks))
+# rpeaks = peak
 
-# # == saving all the results
-path = "C:\\Users\\Ftay\\Desktop\\PhD\\tests\\Peaks_RR\\fabrice\\"
-# path = "C:\\Users\\Ftay\\Desktop\\PhD\\tests\\siena_vs_fantasia\\Peaks_RR\\PN013"
+# =====================================================
+"Here to add a beats that were not benn detected "
+# =====================================================
+
+# add = [366336, 365878, 355897, 652312]
+# for i in range(len(add)):
+#     rpeaks.append(add[i])
+# rpeaks.sort()
+
+
+# =====================================================
+" saving all the results"
+# =====================================================
+path = ""
 Path(path).mkdir(parents=True, exist_ok=True)
 
-np.savetxt(path + '\\peaks-'+ ID + '.txt', np.array(rpeaks))
+# np.savetxt(path + 'peaks-'+ ID + '.txt', np.array(rpeaks))
+# np.savetxt(path + 'signal-'+ ID + '.txt', np.array(signal_input))
 
 print("end of your code ")
-
